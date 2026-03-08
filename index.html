@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Rizwan & Anha Arcade</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #ffe9f4, #ffe0f0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        #app {
+            width: 100%;
+            max-width: 1200px;
+            background: rgba(255, 245, 250, 0.7);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border-radius: 3rem;
+            padding: 2rem;
+            box-shadow: 0 30px 50px -20px rgba(200, 100, 150, 0.5), 0 0 0 1px rgba(255, 200, 220, 0.5);
+            position: relative;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .title h1 {
+            font-size: 2.2rem;
+            font-weight: 500;
+            background: linear-gradient(135deg, #b3407a, #d87ca5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .presence {
+            display: flex;
+            gap: 2rem;
+            background: rgba(255, 255, 255, 0.3);
+            padding: 0.6rem 1.5rem;
+            border-radius: 60px;
+            border: 1px solid #ffb6d9;
+        }
+        .player-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ffb7c5;
+            transition: 0.2s;
+        }
+        .dot.online {
+            background: #88e0a0;
+            box-shadow: 0 0 12px #6fda7a;
+        }
+        .player-name.anha {
+            color: #d45a9a;
+            font-weight: 600;
+            position: relative;
+        }
+        .player-name.anha::after {
+            content: " ♡";
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        .scoreboard {
+            background: rgba(255, 215, 235, 0.6);
+            border-radius: 50px;
+            padding: 0.4rem 1.5rem;
+            display: flex;
+            gap: 2rem;
+            border: 1px solid #ffb0d0;
+        }
+        .chat-icon {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #ffb7d0;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            box-shadow: 0 10px 20px #ff99bb;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 2px solid white;
+            z-index: 1000;
+        }
+        .chat-icon:hover { transform: scale(1.1); }
+        .chat-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #f05b8c;
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+        }
+        .chat-panel {
+            position: fixed;
+            bottom: 6rem;
+            right: 2rem;
+            width: 320px;
+            height: 450px;
+            background: rgba(255, 240, 245, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 20px 35px #ffa5c0;
+            border: 1px solid #ffc0d5;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1001;
+        }
+        .chat-panel.open { transform: translateX(0); }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding-right: 0.3rem;
+        }
+        .chat-bubble {
+            max-width: 90%;
+            padding: 0.6rem 1rem;
+            border-radius: 1.5rem;
+            background: #ffeef4;
+            align-self: flex-start;
+            border: 1px solid #ffc1d4;
+        }
+        .chat-bubble.own {
+            background: #ffd5e5;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.3rem;
+        }
+        .chat-bubble.anha {
+            border-left: 4px solid #ff8ab5;
+        }
+        .chat-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: #a05a7a;
+            margin-bottom: 0.2rem;
+        }
+        .chat-input-area {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border-radius: 3rem;
+            border: 1px solid #ffb0ca;
+            outline: none;
+            background: white;
+        }
+        .chat-input-area button {
+            background: #f57eb3;
+            border: none;
+            border-radius: 3rem;
+            width: 55px;
+            color: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .game-card {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            border-radius: 2rem;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 10px 20px #ffbfd0;
+            transition: 0.2s;
+            cursor: pointer;
+            border: 1px solid white;
+        }
+        .game-card:hover {
+            transform: translateY(-6px);
+            background: rgba(255, 230, 240, 0.8);
+        }
+        .game-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        .game-title {
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: #a13462;
+        }
+        .game-desc {
+            font-size: 0.8rem;
+            color: #9b5977;
+            margin: 0.3rem 0 1rem;
+        }
+        .play-btn {
+            background: #ff9ec5;
+            border: none;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 600;
+            border: 1px solid white;
+            cursor: pointer;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="header">
+            <div class="title"><h1>✨ Rizwan & Anha Arcade ✨</h1></div>
+            <div class="presence">
+                <div class="player-status"><span class="dot" id="dotRizwan"></span><span class="player-name">Rizwan</span></div>
+                <div class="player-status"><span class="dot" id="dotAnha"></span><span class="player-name anha">Anha</span></div>
+            </div>
+            <div class="scoreboard" id="scoreboard">Rizwan: 0  •  Anha: 0</div>
+        </div>
+
+        <div class="game-grid">
+            <div class="game-card" onclick="location.href='tictactoe.html?room='+getRoom()+'&player='+getPlayer()">
+                <div class="game-icon">❌⭕</div>
+                <div class="game-title">Tic Tac Toe</div>
+                <div class="game-desc">classic 3‑in‑a‑row</div>
+                <button class="play-btn">play</button>
+            </div>
+            <div class="game-card" onclick="location.href='connect4.html?room='+getRoom()+'&player='+getPlayer()">
+                <div class="game-icon">🔴🟡</div>
+                <div class="game-title">Connect Four</div>
+                <div class="game-desc">drop & connect</div>
+                <button class="play-btn">play</button>
+            </div>
+            <div class="game-card" onclick="location.href='battleship.html?room='+getRoom()+'&player='+getPlayer()">
+                <div class="game-icon">🚢⚓</div>
+                <div class="game-title">Battleship</div>
+                <div class="game-desc">sink ships</div>
+                <button class="play-btn">play</button>
+            </div>
+            <div class="game-card" onclick="location.href='pong.html?room='+getRoom()+'&player='+getPlayer()">
+                <div class="game-icon">🏓</div>
+                <div class="game-title">Pong</div>
+                <div class="game-desc">classic arcade</div>
+                <button class="play-btn">play</button>
+            </div>
+            <div class="game-card" onclick="location.href='memory.html?room='+getRoom()+'&player='+getPlayer()">
+                <div class="game-icon">🃏</div>
+                <div class="game-title">Memory Match</div>
+                <div class="game-desc">find pairs</div>
+                <button class="play-btn">play</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat elements -->
+    <div class="chat-icon" id="chatIcon">
+        💬
+        <span class="chat-badge hidden" id="chatBadge">0</span>
+    </div>
+    <div class="chat-panel" id="chatPanel">
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="type a message...">
+            <button id="sendChat">➤</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const player = params.get('player')?.toLowerCase();
+        const room = params.get('room') || 'love';
+
+        if (player !== 'rizwan' && player !== 'anha') {
+            document.body.innerHTML = '<div style="text-align: center; font-size: 2rem; color: #b34a7a; margin-top: 20vh;">This arcade is private.</div>';
+            throw new Error('Invalid player');
+        }
+
+        // Store player and room in sessionStorage for other pages
+        sessionStorage.setItem('player', player);
+        sessionStorage.setItem('room', room);
+
+        function getPlayer() { return player; }
+        function getRoom() { return room; }
+
+        const socket = io();
+        socket.emit('join', { room, player });
+
+        // DOM elements
+        const dotRizwan = document.getElementById('dotRizwan');
+        const dotAnha = document.getElementById('dotAnha');
+        const scoreboardEl = document.getElementById('scoreboard');
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChat = document.getElementById('sendChat');
+        const chatIcon = document.getElementById('chatIcon');
+        const chatPanel = document.getElementById('chatPanel');
+        const chatBadge = document.getElementById('chatBadge');
+
+        let unreadCount = 0;
+        let chatOpen = false;
+
+        chatIcon.addEventListener('click', () => {
+            chatOpen = !chatOpen;
+            chatPanel.classList.toggle('open', chatOpen);
+            if (chatOpen) {
+                chatBadge.classList.add('hidden');
+                unreadCount = 0;
+            }
+        });
+
+        function sendChatMessage() {
+            const text = chatInput.value.trim();
+            if (text) {
+                socket.emit('chatMessage', text);
+                chatInput.value = '';
+            }
+        }
+        sendChat.addEventListener('click', sendChatMessage);
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+
+        function appendChatMessage(msg) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('chat-bubble');
+            if (msg.sender === player) bubble.classList.add('own');
+            if (msg.sender === 'anha') bubble.classList.add('anha');
+            bubble.innerHTML = `<div class="chat-meta"><span>${msg.sender}</span><span>${msg.timestamp || ''}</span></div><div>${msg.text}</div>`;
+            chatMessages.appendChild(bubble);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            if (!chatOpen && msg.sender !== player) {
+                unreadCount++;
+                chatBadge.classList.remove('hidden');
+                chatBadge.innerText = unreadCount;
+            }
+        }
+
+        socket.on('presence', (p) => {
+            dotRizwan.classList.toggle('online', p.rizwan);
+            dotAnha.classList.toggle('online', p.anha);
+        });
+
+        socket.on('init', (data) => {
+            data.chat.forEach(appendChatMessage);
+            updateScoreboard(data.scoreboard);
+            dotRizwan.classList.toggle('online', data.presence.rizwan);
+            dotAnha.classList.toggle('online', data.presence.anha);
+        });
+
+        socket.on('chatMessage', appendChatMessage);
+        socket.on('scoreboard', updateScoreboard);
+
+        function updateScoreboard(scores) {
+            scoreboardEl.innerText = `Rizwan: ${scores.rizwan}  •  Anha: ${scores.anha}`;
+        }
+    </script>
+</body>
+</html>

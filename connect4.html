@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Connect Four · Rizwan & Anha</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #ffe9f4, #ffe0f0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .game-container {
+            background: rgba(255, 245, 250, 0.8);
+            backdrop-filter: blur(15px);
+            border-radius: 3rem;
+            padding: 2rem;
+            box-shadow: 0 30px 50px -20px #ffa5c0;
+            border: 1px solid #ffc0d5;
+            max-width: 600px;
+            width: 100%;
+        }
+        h2 { text-align: center; color: #b3407a; margin-bottom: 1rem; }
+        .turn-indicator {
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 1rem 0;
+            background: #fff0f7;
+            padding: 0.7rem;
+            border-radius: 60px;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            background: #4a7a9a;
+            padding: 15px;
+            border-radius: 40px;
+            margin: 1rem 0;
+        }
+        .cell {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #306080;
+            transition: background 0.1s;
+        }
+        .cell.green { background: #b0e57c; }
+        .cell.blue { background: #7cb0e5; }
+        .back-btn {
+            background: #ffb7cf;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            margin-top: 1rem;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h2>🔴🟡 Connect Four</h2>
+        <div class="turn-indicator" id="turnDisplay">Loading...</div>
+        <div class="board" id="board"></div>
+        <button class="back-btn" id="backBtn">← Back to Arcade</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const player = params.get('player')?.toLowerCase();
+        const room = params.get('room') || 'love';
+
+        if (player !== 'rizwan' && player !== 'anha') {
+            alert('Invalid player');
+            window.location.href = '/';
+        }
+
+        const socket = io();
+        socket.emit('join', { room, player });
+
+        let gameState = null;
+
+        socket.on('init', (data) => {
+            if (data.currentGame && data.currentGame.name === 'connect4') {
+                gameState = data.currentGame.state;
+                render();
+            } else {
+                socket.emit('startGame', 'connect4');
+            }
+        });
+
+        socket.on('gameStarted', (game) => {
+            if (game.name === 'connect4') {
+                gameState = game.state;
+                render();
+            }
+        });
+
+        socket.on('gameUpdate', (state) => {
+            gameState = state;
+            render();
+        });
+
+        socket.on('gameEnded', () => {
+            window.location.href = '/?player=' + player + '&room=' + room;
+        });
+
+        function render() {
+            if (!gameState) return;
+            const boardDiv = document.getElementById('board');
+            let html = '';
+            for (let r = 0; r < 6; r++) {
+                for (let c = 0; c < 7; c++) {
+                    const color = gameState.board[r][c] || '';
+                    html += `<div class="cell ${color}" data-row="${r}" data-col="${c}"></div>`;
+                }
+            }
+            boardDiv.innerHTML = html;
+
+            let turnText = '';
+            if (gameState.winner) {
+                if (gameState.winner === 'anha') turnText = 'Anha wins! ♡';
+                else if (gameState.winner === 'rizwan') turnText = 'Rizwan wins!';
+                else turnText = 'Draw';
+            } else {
+                turnText = gameState.turn === 'anha' ? "Anha's turn" : "Rizwan's turn";
+            }
+            document.getElementById('turnDisplay').innerText = turnText;
+
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.addEventListener('click', () => {
+                    if (gameState.winner) return;
+                    if (gameState.turn !== player) return;
+                    const col = cell.dataset.col;
+                    socket.emit('gameMove', { column: parseInt(col) });
+                });
+            });
+        }
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            socket.emit('leaveGame');
+        });
+    </script>
+</body>
+</html>

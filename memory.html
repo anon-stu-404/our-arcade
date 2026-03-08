@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Memory Match · Rizwan & Anha</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(145deg, #ffe9f4, #ffe0f0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .game-container {
+            background: rgba(255, 245, 250, 0.8);
+            backdrop-filter: blur(15px);
+            border-radius: 3rem;
+            padding: 2rem;
+            box-shadow: 0 30px 50px -20px #ffa5c0;
+            border: 1px solid #ffc0d5;
+            max-width: 600px;
+            width: 100%;
+        }
+        h2 { text-align: center; color: #b3407a; margin-bottom: 1rem; }
+        .turn-indicator {
+            text-align: center;
+            font-size: 1.5rem;
+            margin: 1rem 0;
+            background: #fff0f7;
+            padding: 0.7rem;
+            border-radius: 60px;
+        }
+        .scores {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 1rem 0;
+        }
+        .card {
+            aspect-ratio: 1;
+            background: #ffb7cf;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #d98aa8;
+            transition: 0.1s;
+            border: 2px solid white;
+        }
+        .card.flipped, .card.matched {
+            background: #fff0f5;
+            box-shadow: 0 4px 0 #d98aa8;
+            transform: translateY(4px);
+        }
+        .card.matched {
+            background: #c0e0c0;
+            cursor: default;
+        }
+        .back-btn {
+            background: #ffb7cf;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            margin-top: 1rem;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h2>🃏 Memory Match</h2>
+        <div class="scores">
+            <span>Rizwan: <span id="scoreRizwan">0</span></span>
+            <span>Anha: <span id="scoreAnha">0</span></span>
+        </div>
+        <div class="turn-indicator" id="turnDisplay">Loading...</div>
+        <div class="board" id="board"></div>
+        <button class="back-btn" id="backBtn">← Back to Arcade</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const player = params.get('player')?.toLowerCase();
+        const room = params.get('room') || 'love';
+
+        if (player !== 'rizwan' && player !== 'anha') {
+            alert('Invalid player');
+            window.location.href = '/';
+        }
+
+        const socket = io();
+        socket.emit('join', { room, player });
+
+        let gameState = null;
+
+        socket.on('init', (data) => {
+            if (data.currentGame && data.currentGame.name === 'memory') {
+                gameState = data.currentGame.state;
+                render();
+            } else {
+                socket.emit('startGame', 'memory');
+            }
+        });
+
+        socket.on('gameStarted', (game) => {
+            if (game.name === 'memory') {
+                gameState = game.state;
+                render();
+            }
+        });
+
+        socket.on('gameUpdate', (state) => {
+            gameState = state;
+            render();
+        });
+
+        socket.on('gameEnded', () => {
+            window.location.href = '/?player=' + player + '&room=' + room;
+        });
+
+        function render() {
+            if (!gameState) return;
+            const boardDiv = document.getElementById('board');
+            let html = '';
+            gameState.cards.forEach((card, idx) => {
+                let classes = 'card';
+                if (card.flipped || card.matched) classes += ' flipped';
+                if (card.matched) classes += ' matched';
+                html += `<div class="${classes}" data-index="${idx}">${card.flipped || card.matched ? card.symbol : '❓'}</div>`;
+            });
+            boardDiv.innerHTML = html;
+
+            document.getElementById('scoreRizwan').innerText = gameState.scores.rizwan;
+            document.getElementById('scoreAnha').innerText = gameState.scores.anha;
+
+            let turnText = '';
+            if (gameState.gameOver) {
+                turnText = 'Game Over!';
+            } else {
+                turnText = gameState.turn === 'anha' ? "Anha's turn" : "Rizwan's turn";
+            }
+            document.getElementById('turnDisplay').innerText = turnText;
+
+            if (!gameState.gameOver && gameState.turn === player) {
+                document.querySelectorAll('.card:not(.matched)').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const idx = card.dataset.index;
+                        if (gameState.cards[idx].flipped) return;
+                        socket.emit('gameMove', { type: 'flip', index: parseInt(idx) });
+                    });
+                });
+            }
+
+            // Auto reset picks after mismatch
+            if (gameState.firstPick !== null && gameState.secondPick !== null) {
+                setTimeout(() => {
+                    socket.emit('gameMove', { type: 'resetPicks' });
+                }, 800);
+            }
+        }
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            socket.emit('leaveGame');
+        });
+    </script>
+</body>
+</html>

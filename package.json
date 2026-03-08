@@ -1,0 +1,16 @@
+{
+  "name": "rizwan-anha-arcade-final",
+  "version": "1.0.0",
+  "description": "Complete private arcade for two",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.5.4"
+  },
+  "engines": {
+    "node": "18.x"
+  }
+}
